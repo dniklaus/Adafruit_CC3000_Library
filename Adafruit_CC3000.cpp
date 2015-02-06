@@ -241,7 +241,14 @@ bool Adafruit_CC3000::begin(uint8_t patchReq, bool useSmartConfigData, const cha
 {
   if (_initialised) return true;
 
-  #ifndef CORE_ADAX
+  #if defined(digitalPinToInterrupt)
+  // digitalPinToInterrupt macro is supported on Arduino 1.0.6+ and 1.5.6+
+  // returns NOT_AN_INTERRUPT (-1 = 0xFF) if g_irqPin is not mapped to an INT
+  #ifndef NOT_AN_INTERRUPT
+    #define NOT_AN_INTERRUPT (-1)
+  #endif
+  g_IRQnum = digitalPinToInterrupt(g_irqPin);
+  #elif !defined(CORE_ADAX)
   // determine irq #
   for (uint8_t i=0; i<sizeof(dreqinttable); i+=2) {
     if (g_irqPin == dreqinttable[i]) {
@@ -799,12 +806,12 @@ uint8_t Adafruit_CC3000::getNextSSID(uint8_t *rssi, uint8_t *secMode, char *ssid
 */
 /**************************************************************************/
 #ifndef CC3000_TINY_DRIVER
-bool Adafruit_CC3000::startSmartConfig(const char *_deviceName, const char *smartConfigKey)
+bool Adafruit_CC3000::startSmartConfig(const char *_deviceName, const char *smartConfigKey, uint32_t timeout)
 {
   bool enableAES = smartConfigKey != NULL;
   cc3000Bitset.clear();
 
-  uint32_t   timeout = 0;
+  uint32_t   time = 0;
 
   if (!_initialised) {
     return false;
@@ -858,8 +865,8 @@ bool Adafruit_CC3000::startSmartConfig(const char *_deviceName, const char *smar
   {
     cc3k_int_poll();
     // waiting here for event SIMPLE_CONFIG_DONE
-    timeout+=10;
-    if (timeout > 60000)   // ~60s
+    time+=10;
+    if (time > timeout)   // default of 60s
     {
       return false;
     }
@@ -901,18 +908,18 @@ bool Adafruit_CC3000::startSmartConfig(const char *_deviceName, const char *smar
                 "Failed setting event mask", false);  
 
   // Wait for a connection
-  timeout = 0;
+  time = 0;
   while(!cc3000Bitset.test(CC3000BitSet::IsConnected))
   {
     cc3k_int_poll();
-    if(timeout > WLAN_CONNECT_TIMEOUT) // ~20s
+    if (time > WLAN_CONNECT_TIMEOUT) // default of 10s
     {
       CHECK_PRINTER {
         CC3KPrinter->println(F("Timed out waiting to connect"));
       }
       return false;
     }
-    timeout += 10;
+    time += 10;
     delay(10);
   }
   
@@ -1221,6 +1228,17 @@ bool Adafruit_CC3000::checkConnected(void)
 /**************************************************************************/
 bool Adafruit_CC3000::checkDHCP(void)
 {
+  // Ugly hack to fix UDP issues with the 1.13 firmware by calling
+  // gethostbyname on localhost.  The output is completely ignored
+  // but for some reason this call is necessary or else UDP won't 
+  // work.  See this thread from TI for more details and the genesis
+  // of the workaround: http://e2e.ti.com/support/wireless_connectivity/f/851/t/342177.aspx
+  // Putting this in checkDHCP is a nice way to make it just work
+  // for people without any need to add to their sketch.
+  if (cc3000Bitset.test(CC3000BitSet::HasDHCP)) {
+    uint32_t output;
+    gethostbyname("localhost", 9, &output);
+  }
   return cc3000Bitset.test(CC3000BitSet::HasDHCP);
 }
 
@@ -1367,7 +1385,7 @@ Adafruit_CC3000_Client::Adafruit_CC3000_Client(void) {
   _socket = -1;
 }
 
-Adafruit_CC3000_Client::Adafruit_CC3000_Client(uint16_t s) {
+Adafruit_CC3000_Client::Adafruit_CC3000_Client(int32_t s) {
   _socket = s; 
   bufsiz = 0;
   _rx_buf_idx = 0;
@@ -1412,6 +1430,12 @@ int Adafruit_CC3000_Client::connect(const char *host, uint16_t port){
 
 int Adafruit_CC3000_Client::connect(IPAddress destIP, uint16_t destPort)
 {
+  // Note this function is almost exactly the same as connectTCP on the Adafruit CC3000 class.
+  // The only difference is it resets the client's buffers to be empty, and then implements the
+  // same logic as connect.
+  // TODO: Refactor this entire function away so there is a single common function for connecting
+  // to a TCP socket that both this function and the connectTCP function will use.
+
   bufsiz = 0;
   _rx_buf_idx = 0;
   sockaddr      socketAddress;
@@ -1428,6 +1452,8 @@ int Adafruit_CC3000_Client::connect(IPAddress destIP, uint16_t destPort)
     return 0;
   }
   //CC3KPrinter->print(F("DONE (socket ")); CC3KPrinter->print(tcp_socket); CC3KPrinter->println(F(")"));
+
+  closed_sockets[tcp_socket] = false; // Clear any previous closed event
 
   // Try to open the socket
   memset(&socketAddress, 0x00, sizeof(socketAddress));

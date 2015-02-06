@@ -43,6 +43,9 @@
 #ifndef __SOCKET_H__
 #define __SOCKET_H__
 
+// Adafruit CC3k Host Driver Difference
+// Need to reference types or else compilation will fail.
+// Noted 12-12-2014 by tdicola
 #include "data_types.h"
 
 //*****************************************************************************
@@ -108,9 +111,6 @@ extern "C" {
 
 #define  IOCTL_SOCKET_EVENTMASK
 
-#ifdef ENOBUFS
-#undef ENOBUFS
-#endif
 #define ENOBUFS                 55          // No buffer space available
 
 #define __FD_SETSIZE            32
@@ -119,7 +119,6 @@ extern "C" {
 	
 #define NO_QUERY_RECIVED        -3
 	
-	
 typedef struct _in_addr_t
 {
     UINT32 s_addr;                   // load with inet_aton()
@@ -127,7 +126,7 @@ typedef struct _in_addr_t
 
 typedef struct _sockaddr_t
 {
-    UINT16    sa_family;
+    UINT16   sa_family;
     UINT8     sa_data[14];
 } sockaddr;
 
@@ -141,7 +140,7 @@ typedef struct _sockaddr_in_t
 
 typedef UINT32 socklen_t;
 
-// The fd_set member is required to be an array of longs.
+// The fd_set member is required to be an array of INT32s.
 typedef INT32 __fd_mask;
 
 // It's easier to assume 8-bit bytes than to get CHAR_BIT.
@@ -149,6 +148,9 @@ typedef INT32 __fd_mask;
 #define __FDELT(d)              ((d) / __NFDBITS)
 #define __FDMASK(d)             ((__fd_mask) 1 << ((d) % __NFDBITS))
 
+// Adafruit CC3k Host Driver Difference
+// Need to unset this if set or else compilation fails on the Arduino Due (newlib quirk?)
+// Noted 1-24-2015 by tdicola
 #ifdef fd_set
 #undef fd_set  // for compatibility with newlib, which defines fd_set
 #endif
@@ -174,6 +176,9 @@ typedef struct
 #define __FD_ISSET(d, set)     (__FDS_BITS (set)[__FDELT (d)] & __FDMASK (d))
 
 // Access macros for 'fd_set'.
+// Adafruit CC3k Host Driver Difference
+// Need to unset these macros if set or else compilation fails on the Arduino Due (newlib quirk?)
+// Noted 1-24-2015 by tdicola
 #ifdef FD_SET
 #undef FD_SET
 #endif
@@ -243,7 +248,7 @@ typedef struct
 //!          application layer to obtain a socket handle.
 //
 //*****************************************************************************
-extern INT16 socket(INT32 domain, INT32 type, INT32 protocol);
+extern INT32 socket(INT32 domain, INT32 type, INT32 protocol);
 
 //*****************************************************************************
 //
@@ -317,7 +322,7 @@ extern INT32 accept(INT32 sd, sockaddr *addr, socklen_t *addrlen);
 //!
 //!  @brief  assign a name to a socket
 //!          This function gives the socket the local address addr.
-//!          addr is addrlen bytes INT32. Traditionally, this is called when a 
+//!          addr is addrlen bytes long. Traditionally, this is called when a 
 //!          socket is created with socket, it exists in a name space (address 
 //!          family) but has no name assigned.
 //!          It is necessary to assign a local address before a SOCK_STREAM
@@ -371,6 +376,10 @@ extern INT32 listen(INT32 sd, INT32 backlog);
 //
 //*****************************************************************************
 #ifndef CC3000_TINY_DRIVER 
+// Adafruit CC3k Host Driver Difference
+// Make hostname a const char pointer because it isn't modified and the Adafruit
+// driver code needs it to be const to interface with Arduino's client library.
+// Noted 12-12-2014 by tdicola
 extern INT16 gethostbyname(const CHAR * hostname, UINT16 usNameLen, UINT32* out_ip_addr);
 #endif
 
@@ -480,13 +489,19 @@ extern INT16 select(INT32 nfds, fd_set *readsds, fd_set *writesds,
 //!  @Note   On this version the following two socket options are enabled:
 //!    			 The only protocol level supported in this version
 //!          is SOL_SOCKET (level).
-//!		       1. SOCKOPT_RECV_TIMEOUT (optname)
-//!			      SOCKOPT_RECV_TIMEOUT configures recv and recvfrom timeout 
+//!           1. SOCKOPT_RECV_NONBLOCK (optname)
+//!           SOCKOPT_RECV_NONBLOCK sets the recv and recvfrom 
+//!           non-blocking modes on or off.
+//!           In that case optval should be SOCK_ON or SOCK_OFF (optval).
+//!
+//!           2. SOCKOPT_RECV_TIMEOUT (optname)
+//!           SOCKOPT_RECV_TIMEOUT configures recv and recvfrom timeout 
 //!           in milliseconds.
-//!		        In that case optval should be pointer to UINT32.
-//!		       2. SOCKOPT_NONBLOCK (optname). sets the socket non-blocking mode on 
-//!           or off.
-//!		        In that case optval should be SOCK_ON or SOCK_OFF (optval).
+//!           In that case optval should be pointer to UINT32.
+//!		       
+//!           3. SOCKOPT_ACCEPT_NONBLOCK (optname). sets the socket accept 
+//!           non-blocking mode on or off.
+//!           In that case optval should be SOCK_ON or SOCK_OFF (optval).
 //!
 //!  @sa getsockopt
 //
@@ -530,13 +545,20 @@ extern INT16 setsockopt(INT32 sd, INT32 level, INT32 optname, const void *optval
 //!  @Note   On this version the following two socket options are enabled:
 //!    			 The only protocol level supported in this version
 //!          is SOL_SOCKET (level).
-//!		       1. SOCKOPT_RECV_TIMEOUT (optname)
-//!			      SOCKOPT_RECV_TIMEOUT configures recv and recvfrom timeout 
+//!           1. SOCKOPT_RECV_NONBLOCK (optname)
+//!           SOCKOPT_RECV_NONBLOCK sets the recv and recvfrom 
+//!           non-blocking modes on or off.
+//!           In that case optval should be SOCK_ON or SOCK_OFF (optval).
+//!
+//!           2. SOCKOPT_RECV_TIMEOUT (optname)
+//!           SOCKOPT_RECV_TIMEOUT configures recv and recvfrom timeout 
 //!           in milliseconds.
-//!		        In that case optval should be pointer to UINT32.
-//!		       2. SOCKOPT_NONBLOCK (optname). sets the socket non-blocking mode on 
-//!           or off.
-//!		        In that case optval should be SOCK_ON or SOCK_OFF (optval).
+//!           In that case optval should be pointer to UINT32.
+//!
+//!           3. SOCKOPT_ACCEPT_NONBLOCK (optname). sets the socket accept 
+//!           non-blocking mode on or off.
+//!           In that case optval should be SOCK_ON or SOCK_OFF (optval).
+//!		       
 //!
 //!  @sa setsockopt
 //
@@ -658,17 +680,16 @@ extern INT16 sendto(INT32 sd, const void *buf, INT32 len, INT32 flags,
 //!  @param[in] mdnsEnabled         flag to enable/disable the mDNS feature
 //!  @param[in] deviceServiceName   Service name as part of the published
 //!                                 canonical domain name
-//!  @param[in] deviceServiceNameLength   Length of the service name
-//!  
+//!  @param[in] deviceServiceNameLength   Length of the service name - up to 32 chars
 //!
-//!  @return   On success, zero is returned, return SOC_ERROR if socket was not 
+//!
+//!  @return   On success, zero is returned, return SOC_ERROR if socket was not
 //!            opened successfully, or if an error occurred.
 //!
 //!  @brief    Set CC3000 in mDNS advertiser mode in order to advertise itself.
 //
 //*****************************************************************************
 extern INT16 mdnsAdvertiser(UINT16 mdnsEnabled, CHAR * deviceServiceName, UINT16 deviceServiceNameLength);
-
 
 //*****************************************************************************
 //

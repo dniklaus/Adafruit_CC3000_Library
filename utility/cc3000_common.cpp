@@ -47,14 +47,17 @@
 //
 //*****************************************************************************
 /******************************************************************************
- *
- * Include files
- *
- *****************************************************************************/
+*
+* Include files
+*
+*****************************************************************************/
 #include "cc3000_common.h"
 #include "socket.h"
 #include "wlan.h"
 #include "evnt_handler.h"
+// Adafruit CC3k Host Driver Difference
+// Include our own debug header & root Arduino header.
+// Noted 12-12-2014 by tdicola
 #include "debug.h"
 #include <Arduino.h>
 
@@ -72,7 +75,7 @@
 //*****************************************************************************
 void __error__(CHAR *pcFilename, UINT32 ulLine)
 {
-    //TODO full up function
+	//TODO full up function
 }
 
 
@@ -137,6 +140,9 @@ UINT8* UINT16_TO_STREAM_f (UINT8 *p, UINT16 u16)
 
 UINT16 STREAM_TO_UINT16_f(CHAR* cp, UINT16 offset)
 {
+  // Adafruit CC3k Host Driver Difference
+  // Explicit cast to UINT8 pointer is required or decoding parameters breaks on Arduino.
+  // Noted 12-12-2014 by tdicola
   UINT8 *p = (UINT8 *)cp;
   /*
   DEBUGPRINT_F("Stream2u16: ");
@@ -166,6 +172,9 @@ UINT16 STREAM_TO_UINT16_f(CHAR* cp, UINT16 offset)
 
 UINT32 STREAM_TO_UINT32_f(CHAR* cp, UINT16 offset)
 {
+  // Adafruit CC3k Host Driver Difference
+  // Explicit cast to UINT8 pointer is required or decoding parameters breaks on Arduino.
+  // Noted 12-12-2014 by tdicola
   UINT8 *p = (UINT8 *)cp;
   
   /*

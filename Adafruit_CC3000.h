@@ -52,6 +52,7 @@
   #define CC3K_DEFAULT_PRINTER 0
 #endif
 
+#define SMART_CONFIG_TIMEOUT 60000  // how long to wait for smart config to complete
 #define WLAN_CONNECT_TIMEOUT 10000  // how long to wait, in milliseconds
 #define RXBUFFERSIZE  64 // how much to buffer on the incoming side
 #define TXBUFFERSIZE  32 // how much to buffer on the outgoing side
@@ -84,7 +85,7 @@ class Adafruit_CC3000;
 
 class Adafruit_CC3000_Client : public Client {
  public:
-  Adafruit_CC3000_Client(uint16_t s);
+  Adafruit_CC3000_Client(int32_t s);
   Adafruit_CC3000_Client(void);
   Adafruit_CC3000_Client(const Adafruit_CC3000_Client& copy);
   void operator=(const Adafruit_CC3000_Client& other);
@@ -122,7 +123,7 @@ class Adafruit_CC3000_Client : public Client {
   int16_t bufsiz;
 
  private:
-  int16_t _socket;
+  int32_t _socket;
 
 };
 
@@ -170,8 +171,7 @@ class Adafruit_CC3000 {
     uint8_t  getNextSSID(uint8_t *rssi, uint8_t *secMode, char *ssidname);
 
     bool     listSSIDResults(void);
-    bool     startSmartConfig(const char *_deviceName = NULL, const char *smartConfigKey = NULL);
-
+    bool     startSmartConfig(const char *_deviceName = NULL, const char *smartConfigKey = NULL, uint32_t = SMART_CONFIG_TIMEOUT);
     bool     getIPConfig(tNetappIpconfigRetArgs *ipConfig);
 
 
