@@ -79,19 +79,19 @@
 // These are the interrupt and control pins
 #define ADAFRUIT_CC3000_IRQ   3  // MUST be an interrupt pin!
 // These can be any two pins
-#define ADAFRUIT_CC3000_VBAT  5
-#define ADAFRUIT_CC3000_CS    10
+#define ADAFRUIT_CC3000_VBAT  12
+#define ADAFRUIT_CC3000_CS    13
 // Use hardware SPI for the remaining pins
 // On an UNO, SCK = 13, MISO = 12, and MOSI = 11
 Adafruit_CC3000 cc3000 = Adafruit_CC3000(ADAFRUIT_CC3000_CS, ADAFRUIT_CC3000_IRQ, ADAFRUIT_CC3000_VBAT,
                                          SPI_CLOCK_DIVIDER); // you can change this clock speed
 
-#define WLAN_SSID       "myNetwork"           // cannot be longer than 32 characters!
-#define WLAN_PASS       "myPassword"
+#define WLAN_SSID       "LintillaNet"           // cannot be longer than 32 characters!
+#define WLAN_PASS       "AnswerIs42"
 // Security can be WLAN_SEC_UNSEC, WLAN_SEC_WEP, WLAN_SEC_WPA or WLAN_SEC_WPA2
 #define WLAN_SECURITY   WLAN_SEC_WPA2
 
-#define LISTEN_PORT           7    // What TCP port to listen on for connections.  The echo protocol uses port 7.
+#define LISTEN_PORT     9999    // What TCP port to listen on for connections.  The echo protocol uses port 7.
 
 Adafruit_CC3000_Server echoServer(LISTEN_PORT);
 

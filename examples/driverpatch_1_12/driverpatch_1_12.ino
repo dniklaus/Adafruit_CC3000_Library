@@ -43,8 +43,8 @@
 #include "driverpatchinc.h"
 
 #define ADAFRUIT_CC3000_IRQ   3  // MUST be an interrupt pin!
-#define ADAFRUIT_CC3000_CS    10
-#define ADAFRUIT_CC3000_VBAT  5
+#define ADAFRUIT_CC3000_CS    13
+#define ADAFRUIT_CC3000_VBAT  12
 
 Adafruit_CC3000 cc3000 = Adafruit_CC3000(ADAFRUIT_CC3000_CS, ADAFRUIT_CC3000_IRQ, ADAFRUIT_CC3000_VBAT);
 
